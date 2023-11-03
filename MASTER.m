@@ -1,29 +1,34 @@
-function MASTER(rvr, cam, trainedNetwork, myVideo1)
+function MASTER(rvr, trainedNetwork, myVideo1, vid)
 
-    % Run both of these functions in the command window prior to running
-    % the master code
-    % cam = webcam;
+    % Run each of these functions in the command window prior to running
+    % the master code. Doing this is not only necessary, but will speed up
+    % the code while running. 
+    %
     % trainedNetwork = trainFacialDetection();
-    % myVideo1 = VideoWriter('cam1.avi');
+    % myVideo1 = VideoWriter('cam1.avi', 'Uncompressed AVI');
+    % vid = videoinput('winvideo');
+    % triggerconfig(vid, 'manual');
+    % vid.FramesPerTrigger = inf;
 
     while true
-        driveRobot(rvr, cam, trainedNetwork, myVideo1);
+        driveRobot(rvr, trainedNetwork, myVideo1, vid);
         pause(2);
     end
            
-    function mainCode(rvr, cam, trainedNetwork, myVideo1)
+    function mainCode(rvr, trainedNetwork, myVideo1, vid)
     % Purpose: Runs the main block of code that occurs at every corner of
     %          the square the robot drives on 
-    % Input: cam (the webcam attached to the laptop), trainedNetwork (the
-    %        trained network used to detect whose face is in front of the
-    %        camera), and rvr (the variable associated with the robot)
+    % Input: rvr (the variable associated with the robot), 
+    %        trainedNetwork (the trained network used to detect whose face 
+    %        is in front of the camera), myVideo1 (the video writer
+    %        object), and vid (the video input object)
     % Output: NONE
-    % Usage: mainCode(cam, trainedNetwork, rvr)
+    % Usage: mainCode(rvr, trainedNetwork, myVideo1, vid)
         detected = motionDetection(rvr, myVideo1);
         if detected == true
             playMotionDetectedAudio();
             faceScanCountdown();
-            faceInSystem = runFacialDetection(trainedNetwork, cam);
+            faceInSystem = runFacialDetection(trainedNetwork, vid);
                 if faceInSystem
                     playFaceAcceptedAudio();
                 else
@@ -44,6 +49,18 @@ function MASTER(rvr, cam, trainedNetwork, myVideo1)
             waitbar(i/10, h);
         end
         close(h)
+    end
+
+    function playScanUnsuccessfulAudio()
+    % Purpose: Play a sound letting the person know that their face scan
+    %          was unsuccessful and they must input the password
+    % Input: NONE
+    % Output: NONE
+    % Usage: playScanUnsuccessfulAudio()
+        clear sound;
+        [y, Fs] = audioread('scanUnsuccessful.mp3');
+        sound(y, Fs, 16);
+        pause(6.5);
     end
 
     function playMotionDetectedAudio()
@@ -138,7 +155,7 @@ function MASTER(rvr, cam, trainedNetwork, myVideo1)
     % Output: NONE
     % Usage: playTooManyFailedAttemptsAudio()
         clear sound;
-        [y, Fs] = audioroead('tooManyFailedAttempts.mp3')
+        [y, Fs] = audioroead('tooManyFailedAttempts.mp3');
         sound(y, Fs, 16);
         pause(7.5);
     end
@@ -150,22 +167,26 @@ function MASTER(rvr, cam, trainedNetwork, myVideo1)
     % Usage: inputPassword()
         Attempt1 = inputdlg('Enter Password:'); % First password input
         Check = str2double(Attempt1);
-        passwordCorrect = 124680; % Correct Password
+        correct = false;
+        passwordCorrect = 123456; % Correct Password
+        playScanUnsuccessfulAudio();
         if Check == passwordCorrect % First password check
             playPasswordCorrectAudio();
+            correct = true;
         else
             playAttemptFailedAudio();
             Attempt2 = inputdlg('Enter Password (Try 2):'); % Second password input
             Check = str2double(Attempt2);
         end
-        if Check == passwordCorrect % Second password check
+        if Check == passwordCorrect && correct ~= true % Second password check
             playPasswordCorrectAudio();
+            correct = true;
         else
             playAttemptFailedAudio();
             Attempt3 = inputdlg('Enter Password (Try 3):'); % Third password input
             Check = str2double(Attempt3);
         end
-        if Check == passwordCorrect % Third Password Check
+        if Check == passwordCorrect && correct ~= true % Third Password Check
             playPasswordCorrectAudio();
         else
             playNoMoreAttemptsAudio();
@@ -180,32 +201,35 @@ function MASTER(rvr, cam, trainedNetwork, myVideo1)
     % Output: NONE
     % Usage: endAlarm()
         ADC = 123456;
+        correct = false;
         ADCattempt1 = inputdlg('Enter ADC (Try 1):'); % First password input
         Check = str2double(ADCattempt1);
         if Check == ADC % First password check
             playAlarmDisabledAudio();
+            correct = true;
         else
             ADCattempt2 = inputdlg('Enter ADC (Try 2):'); % Second password input
             Check = str2double(ADCattempt2);
         end
-        if Check == ADC % Second password check
+        if Check == ADC && correct ~= true % Second password check
             playAlarmDisabledAudio();
+            correct = true;
         else
             ADCattempt3 = inputdlg('Enter ADC (Try 3):'); % Second password input
             Check = str2double(ADCattempt3);
         end
-        if Check == ADC % Third password check
+        if Check == ADC && correct ~= true % Third password check
             playAlarmDisabledAudio();
         else
-            
+            playTooManyFailedAttemptsAudio();
         end
     end
 
-    function driveRobot(rvr, cam, trainedNetwork, myVideo1)
+    function driveRobot(rvr, trainedNetwork, myVideo1, vid)
     % Purpose: Drive the robot in a square, checking for motion at each
     %          corner
-    % Input: The variable the robot is assigned to, the webcam, and the
-    %        trainedNetwork
+    % Input: The variable the robot is assigned to, the trained network,
+    %        and the video writer object
     % Output: NONE
     % Usage: driveRobot(rvr)
         for i = 1:4
@@ -213,7 +237,7 @@ function MASTER(rvr, cam, trainedNetwork, myVideo1)
            pause(1);
            rvr.turnAngle(94);
            pause(1);
-           mainCode(rvr, cam, trainedNetwork, myVideo1)
+           mainCode(rvr, trainedNetwork, myVideo1, vid)
         end
         rvr.stop;
     end
@@ -227,13 +251,10 @@ function MASTER(rvr, cam, trainedNetwork, myVideo1)
     %        robot
         h = waitbar(0,'Taking Video');
         open(myVideo1);
-        disp('hello');
         totalFrames = 20; % Sets total number of frames to be taken for video
         for i=1:totalFrames
             img1 = rvr.getImage;
-            disp(i);
             writeVideo(myVideo1, img1); % Adds the image taken to the video
-            disp(i + 1);
             waitbar(i/20, h);
         end
         close(h);
@@ -243,7 +264,8 @@ function MASTER(rvr, cam, trainedNetwork, myVideo1)
     function motionDetected = motionTracking(rvr, myVideo1)
     % Purpose: Analyze the video from getVideo(rvr) to determine if motion
     %          has occurred within the field of view of the camera
-    % Input: The variable the robot is assigned to
+    % Input: The variable the robot is assigned to and the video writer
+    %        object
     % Output: An array consisting of 1s and 0s, where a 1 indicates motion
     %          was detected within a frame, while a 0 indicates motion was
     %          not detected within a frame
@@ -432,7 +454,7 @@ function MASTER(rvr, cam, trainedNetwork, myVideo1)
             lostInds = (ages < ageThreshold & visibility < 0.6) | ...
                 [tracks(:).consecutiveInvisibleCount] >= invisibleForTooLong; % Find the indices of 'lost' tracks.
     
-            tracks = tracks(~lostInds); % Delete lost tracks.
+            tracks = tracks(~lostInds); % Delete lost tracks
         end
 
         function createNewTracks()
@@ -473,29 +495,31 @@ function MASTER(rvr, cam, trainedNetwork, myVideo1)
     % Output: Returns true if motion is detected in over 50% of frames, returns false if motion
     %          is not detected in over 50% of frames
     % Usage: isMotion = motionDetection(rvr)
-        if mean(motionTracking(rvr, myVideo1)) > 0.5
+        if mean(motionTracking(rvr, myVideo1)) > 0.25
             isMotion = true;
         else
             isMotion = false;
         end
     end
 
-    function detected = runFacialDetection(network, cam)
+    function detected = runFacialDetection(network,vid)
     % Purpose: Run facial detection code to determine if the person in
     %          front of the webcam is within the database
-    % Input: (network, cam) - network is the trained network used to
-    %         determine faces, cam is the webcam connected to the device
+    % Input: (network) - network is the trained network used to
+    %         determine faces
     % Output: Returns true if the face detected is in the database, returns
     %          false otherwise
-    % Usage: detected = runFacialDetection(network, cam)
+    % Usage: detected = runFacialDetection(network, vid)
         h = waitbar(0,'Running Facial Detection');
         faceDetector=vision.CascadeObjectDetector; % Creates a vision object detector
         labels = []; % Initializes list used to store names of face detected in photo
+        start(vid);
+        trigger(vid);
         for i = 1:11
-            e = snapshot(cam);
-            bboxes =step(faceDetector,e); % Detects a face and assigns it a bounding box
+            data = getdata(vid,1);
+            bboxes =step(faceDetector,data); % Detects a face and assigns it a bounding box
             if(sum(sum(bboxes))~=0)
-                es=imcrop(e,bboxes(1,:));
+                es=imcrop(data,bboxes(1,:));
                 es=imresize(es,[227 227]);
                 label=classify(network,es); % Determines whose face is in the photo and adds that label to labels
                 labels = [labels label];
@@ -506,10 +530,12 @@ function MASTER(rvr, cam, trainedNetwork, myVideo1)
         end
         close(h);
         name = mode(labels); % Determines the most common item in labels
+        disp(name)
         if name == "Jonathan" || name == "Yoltic" || name == "Jacob"
             detected = true; % Returns true if the most commonly detected image in labels is someone in the database
         else
             detected = false; % Returns false if the most commonly detected image in labels is not someone in the database
         end
+        delete(vid);
     end
 end
