@@ -1,11 +1,17 @@
-function MASTER()
-    cam = webcam;
-    trainedNetwork = trainFacialDetection();
+function MASTER(rvr, cam, trainedNetwork, myVideo1)
+
+    % Run both of these functions in the command window prior to running
+    % the master code
+    % cam = webcam;
+    % trainedNetwork = trainFacialDetection();
+    % myVideo1 = VideoWriter('cam1.avi');
+
     while true
-        driveRobot(cam, trainedNetwork, rvr);
+        driveRobot(rvr, cam, trainedNetwork, myVideo1);
+        pause(2);
     end
            
-    function mainCode(cam, trainedNetwork, rvr)
+    function mainCode(rvr, cam, trainedNetwork, myVideo1)
     % Purpose: Runs the main block of code that occurs at every corner of
     %          the square the robot drives on 
     % Input: cam (the webcam attached to the laptop), trainedNetwork (the
@@ -13,7 +19,7 @@ function MASTER()
     %        camera), and rvr (the variable associated with the robot)
     % Output: NONE
     % Usage: mainCode(cam, trainedNetwork, rvr)
-        detected = motionDetection(rvr);
+        detected = motionDetection(rvr, myVideo1);
         if detected == true
             playMotionDetectedAudio();
             faceScanCountdown();
@@ -47,9 +53,10 @@ function MASTER()
     % Input: NONE
     % Output: NONE
     % Usage: playMotionDetectedAudio()
+        clear sound;
         [y, Fs] = audioread('motionDetected.mp3');
         sound(y, Fs, 16);
-        pause(4.5);
+        pause(4.25);
     end
 
     function playFaceAcceptedAudio()
@@ -59,80 +66,159 @@ function MASTER()
     % Input: NONE
     % Output: NONE
     % Usage: playFaceAcceptedAudio()
+        clear sound;
         [y, Fs] = audioread('scanSuccessful.mp3');
         sound(y, Fs, 16);
-        pause(5);
+        pause(3.25);
     end
 
-    function panic = inputPassword()
+    function playAlarmDisabledAudio()
+    % Purpose: Play a sound letting the person know that the alarm has been
+    %          disabled
+    % Input: NONE
+    % Output: NONE
+    % Usage playAlarmDisabledAudio()
+        clear sound;
+        [y, Fs] = audioread('alarmDisabled.mp3');
+        sound(y, Fs, 16);
+        pause(1.5);
+    end
+
+    function playAlarmSiren()
+    % Purpose: Play the alarm that sounds when the password attempts fail
+    % Input: NONE
+    % Output: NONE
+    % Usage: playAlarmSiren()
+        clear sound;
+        [y, Fs] = audioread('alarmSiren.mp3');
+        sound(y, Fs, 16);
+    end
+
+    function playAttemptFailedAudio()
+    % Purpose: Play an audio that lets the user know their password attempt
+    %          failed
+    % Input: NONE
+    % Output: NONE
+    % Usage: playAttemptFailedAudio()
+        clear sound;
+        [y, Fs] = audioread('attemptFailed.mp3');
+        sound(y, Fs, 16);
+        pause(2.75);
+    end
+
+    function playPasswordCorrectAudio()
+    % Purpose: Play an audo that lets the user know their password attempt 
+    %          was successful 
+    % Input: NONE
+    % Output: NONE
+    % Usage: playPasswordCorrectAudio()
+        clear sound;
+        [y, Fs] = audioread('passwordCorrectAudio.mp3');
+        sound(y, Fs, 16);
+        pause(2.5);
+    end
+
+    function playNoMoreAttemptsAudio()
+    % Purpose: Play an audio that lets the user know they have no more
+    %          password attempts left and that the alarm will sound
+    % Input: NONE
+    % Output: NONE
+    % Usage: playNoMoreAttemptsAudio()
+        clear sound;
+        [y, Fs] = audioread('noMoreAttempts.mp3');
+        sound(y, Fs, 16); 
+        pause(3.25);
+    end
+
+    function playTooManyFailedAttemptsAudio()
+    % Purpose: Plays an audio that lets the user know that they have failed
+    %          too many attempts and the password service will shut down
+    %          till law enforcement arrives
+    % Input: NONE
+    % Output: NONE
+    % Usage: playTooManyFailedAttemptsAudio()
+        clear sound;
+        [y, Fs] = audioroead('tooManyFailedAttempts.mp3')
+        sound(y, Fs, 16);
+        pause(7.5);
+    end
+
+    function inputPassword()
+    % Purpose: Starts password input if face recognition fails
+    % Input: NONE
+    % Output: NONE
+    % Usage: inputPassword()
         Attempt1 = inputdlg('Enter Password:'); % First password input
-        Check1 = str2double(Attempt1);
+        Check = str2double(Attempt1);
         passwordCorrect = 124680; % Correct Password
-        if Check1 == passwordCorrect % First password check
-            msgbox ("Correct Password")
-            panic = 0; % Alarm isn't set off
+        if Check == passwordCorrect % First password check
+            playPasswordCorrectAudio();
         else
+            playAttemptFailedAudio();
             Attempt2 = inputdlg('Enter Password (Try 2):'); % Second password input
-            Check2 = str2double(Attempt2);
+            Check = str2double(Attempt2);
         end
-        if Check2 == passwordCorrect % Second password check
-            msgbox ("Correct Password")
-            panic = 0; % Alarm isn't set off
+        if Check == passwordCorrect % Second password check
+            playPasswordCorrectAudio();
         else
-            msgbox ("Incorrect password. Alarm will sound.")
-            panic = 1; % Alarm is set off
+            playAttemptFailedAudio();
+            Attempt3 = inputdlg('Enter Password (Try 3):'); % Third password input
+            Check = str2double(Attempt3);
         end
-    
-        if panic == 1
-            ADC = 123456;
-            ADCattempt1 = inputdlg('Enter ADC (Try 1):'); % First password input
-            Check1 = str2double(ADCattempt1);
+        if Check == passwordCorrect % Third Password Check
+            playPasswordCorrectAudio();
+        else
+            playNoMoreAttemptsAudio();
+            playAlarmSiren();
+            endAlarm();
         end
-        if Check1 == ADC % First password check
-            msgbox ("Panic Disabled")
-            msgbox("Accepted_img.png") % Action if user is authorized
+    end
+
+    function endAlarm()
+    % Purpose: Ends the alarm sound if the disable password is correctly entered
+    % Input: Value of panic function
+    % Output: NONE
+    % Usage: endAlarm()
+        ADC = 123456;
+        ADCattempt1 = inputdlg('Enter ADC (Try 1):'); % First password input
+        Check = str2double(ADCattempt1);
+        if Check == ADC % First password check
+            playAlarmDisabledAudio();
         else
             ADCattempt2 = inputdlg('Enter ADC (Try 2):'); % Second password input
-            Check2 = str2double(ADCattempt2);
+            Check = str2double(ADCattempt2);
         end
-        if Check2 == ADC % Second password check
-            msgbox ("Panic Disabled")
-            msgbox("Accepted_img.png") % Action if user is authorized
+        if Check == ADC % Second password check
+            playAlarmDisabledAudio();
         else
             ADCattempt3 = inputdlg('Enter ADC (Try 3):'); % Second password input
-            Check2 = str2double(ADCattempt3);
+            Check = str2double(ADCattempt3);
         end
-        if Check2 == ADC % Second password check
-            msgbox ("Panic Disabled")
-            msgbox("Accepted_img.png") % Action if user is authorized
+        if Check == ADC % Third password check
+            playAlarmDisabledAudio();
         else
-            msgbox("Alarm_img") % Action if user is not authorized
-            msgbox('Police Have Been Called')
+            
         end
     end
 
-    function driveRobot(cam, trainedNetwork, rvr)
+    function driveRobot(rvr, cam, trainedNetwork, myVideo1)
     % Purpose: Drive the robot in a square, checking for motion at each
     %          corner
-    % Input: The variable the robot is assigned to
+    % Input: The variable the robot is assigned to, the webcam, and the
+    %        trainedNetwork
     % Output: NONE
     % Usage: driveRobot(rvr)
-        rvr.resetHeading
-        tstart = tic;
-        g = 1;
-        while g < 5
-            rvr.setDriveSpeed(50);
-            while toc(tstart)<3
-                pause(3);
-                rvr.turnAngle(90);
-                mainCode(cam, trainedNetwork, rvr)
-            end
-            g = g + 1;
+        for i = 1:4
+           rvr.setDriveSpeed(50,50) ;
+           pause(1);
+           rvr.turnAngle(94);
+           pause(1);
+           mainCode(rvr, cam, trainedNetwork, myVideo1)
         end
-        rvr.stop
+        rvr.stop;
     end
 
-    function getVideo(rvr)
+    function getVideo(rvr, myVideo1)
     % Purpose: Get video from the robot to run through motion detection
     %          code, video saves to current folder
     % Input: The variable the robot is assigned to
@@ -140,20 +226,21 @@ function MASTER()
     % Usage: getVideo(rvr), where rvr is the variable assigned to the
     %        robot
         h = waitbar(0,'Taking Video');
-        myVideo1 = VideoWriter('cam1.avi'); % Creates a video writer object that creates and retains information about a video
-        myVideo1.FrameRate = 10; % Sets the framerate of the video created by myVideo1
         open(myVideo1);
+        disp('hello');
         totalFrames = 20; % Sets total number of frames to be taken for video
         for i=1:totalFrames
-            img1 = getImage(rvr);
+            img1 = rvr.getImage;
+            disp(i);
             writeVideo(myVideo1, img1); % Adds the image taken to the video
+            disp(i + 1);
             waitbar(i/20, h);
         end
         close(h);
         close(myVideo1);
     end
 
-    function motionDetected = motionTracking(rvr)
+    function motionDetected = motionTracking(rvr, myVideo1)
     % Purpose: Analyze the video from getVideo(rvr) to determine if motion
     %          has occurred within the field of view of the camera
     % Input: The variable the robot is assigned to
@@ -161,7 +248,7 @@ function MASTER()
     %          was detected within a frame, while a 0 indicates motion was
     %          not detected within a frame
     % Usage: motionDetected = motionTracking(rvr)
-        getVideo(rvr); % Collects video to be analyzed using getVideo function
+        getVideo(rvr, myVideo1); % Collects video to be analyzed using getVideo function
     
         obj = setupSystemObjects();
         
@@ -194,8 +281,6 @@ function MASTER()
         % Input: NONE
         % Output: An object that reads a video and plays the video
         % Usage: obj = setupSystemObjects()
-        % Note: Usage only applicable in overarching function
-        %       motionTracking
             obj.reader = VideoReader('cam1.avi'); % Creates a video reader
     
             obj.videoPlayer = vision.VideoPlayer('Position', [20, 400, 700, 400]); % Creates a video player
@@ -382,13 +467,13 @@ function MASTER()
         motionDetected = totalMotionDetected;
     end   
 
-    function isMotion = motionDetection(rvr)
+    function isMotion = motionDetection(rvr, myVideo1)
     % Purpose: Detect whether there is motion within the room
     % Input: The variable the robot is assigned to
     % Output: Returns true if motion is detected in over 50% of frames, returns false if motion
     %          is not detected in over 50% of frames
     % Usage: isMotion = motionDetection(rvr)
-        if mean(motionTracking(rvr)) > 0.5
+        if mean(motionTracking(rvr, myVideo1)) > 0.5
             isMotion = true;
         else
             isMotion = false;
@@ -426,21 +511,5 @@ function MASTER()
         else
             detected = false; % Returns false if the most commonly detected image in labels is not someone in the database
         end
-    end
-
-    function returned = trainFacialDetection()
-    % Purpose: Creates a trained network of the faces in the database
-    % Input: NONE
-    % Output: The trained network that can then be passed to the facial detection
-    %          function
-    % Usage: network = trainFacialDetection()
-        g=alexnet; % Creates an AlexNet network
-        layers=g.Layers; % Creates an array of layers for the network
-        layers(23)=fullyConnectedLayer(4); % Defines a fully connected layer with an output size of 4
-        layers(25)=classificationLayer; % Defines classification layer
-        allImages=imageDatastore('database','IncludeSubfolders',true, 'LabelSource','foldernames'); % Creates an ImageDatastore in order to work with database images
-        opts=trainingOptions('sgdm','InitialLearnRate',0.001,'MaxEpochs',20,'MiniBatchSize',64); % Creates training options for the solver
-        myNet1=trainNetwork(allImages,layers,opts); % Trains the network according to previously defined parameters
-        returned = myNet1;
     end
 end
