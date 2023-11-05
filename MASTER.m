@@ -12,7 +12,6 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
 
     while true
         driveRobot(rvr, trainedNetwork, myVideo1, vid);
-        pause(2);
     end
            
     function mainCode(rvr, trainedNetwork, myVideo1, vid)
@@ -58,7 +57,7 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
     % Output: NONE
     % Usage: playScanUnsuccessfulAudio()
         clear sound;
-        [y, Fs] = audioread('scanUnsuccessful.mp3');
+        [y, Fs] = audioread('./Audio/scanUnsuccessful.mp3');
         sound(y, Fs, 16);
         pause(6.5);
     end
@@ -71,7 +70,7 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
     % Output: NONE
     % Usage: playMotionDetectedAudio()
         clear sound;
-        [y, Fs] = audioread('motionDetected.mp3');
+        [y, Fs] = audioread('./Audio/motionDetected.mp3');
         sound(y, Fs, 16);
         pause(4.25);
     end
@@ -84,7 +83,7 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
     % Output: NONE
     % Usage: playFaceAcceptedAudio()
         clear sound;
-        [y, Fs] = audioread('scanSuccessful.mp3');
+        [y, Fs] = audioread('./Audio/scanSuccessful.mp3');
         sound(y, Fs, 16);
         pause(3.25);
     end
@@ -96,7 +95,7 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
     % Output: NONE
     % Usage playAlarmDisabledAudio()
         clear sound;
-        [y, Fs] = audioread('alarmDisabled.mp3');
+        [y, Fs] = audioread('./Audio/alarmDisabled.mp3');
         sound(y, Fs, 16);
         pause(1.5);
     end
@@ -107,7 +106,7 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
     % Output: NONE
     % Usage: playAlarmSiren()
         clear sound;
-        [y, Fs] = audioread('alarmSiren.mp3');
+        [y, Fs] = audioread('./Audio/alarmSiren.mp3');
         sound(y, Fs, 16);
     end
 
@@ -118,7 +117,7 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
     % Output: NONE
     % Usage: playAttemptFailedAudio()
         clear sound;
-        [y, Fs] = audioread('attemptFailed.mp3');
+        [y, Fs] = audioread('./Audio/attemptFailed.mp3');
         sound(y, Fs, 16);
         pause(2.75);
     end
@@ -130,7 +129,7 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
     % Output: NONE
     % Usage: playPasswordCorrectAudio()
         clear sound;
-        [y, Fs] = audioread('passwordCorrectAudio.mp3');
+        [y, Fs] = audioread('./Audio/passwordCorrectAudio.mp3');
         sound(y, Fs, 16);
         pause(2.5);
     end
@@ -142,7 +141,7 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
     % Output: NONE
     % Usage: playNoMoreAttemptsAudio()
         clear sound;
-        [y, Fs] = audioread('noMoreAttempts.mp3');
+        [y, Fs] = audioread('./Audio/noMoreAttempts.mp3');
         sound(y, Fs, 16); 
         pause(3.25);
     end
@@ -155,7 +154,7 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
     % Output: NONE
     % Usage: playTooManyFailedAttemptsAudio()
         clear sound;
-        [y, Fs] = audioroead('tooManyFailedAttempts.mp3');
+        [y, Fs] = audioroead('./Audio/tooManyFailedAttempts.mp3');
         sound(y, Fs, 16);
         pause(7.5);
     end
@@ -165,11 +164,12 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
     % Input: NONE
     % Output: NONE
     % Usage: inputPassword()
-        Attempt1 = inputdlg('Enter Password:'); % First password input
+        Attempt1 = inputdlg('Enter Password (Try 1):'); % First password input
         Check = str2double(Attempt1);
         correct = false;
         passwordCorrect = 123456; % Correct Password
         playScanUnsuccessfulAudio();
+
         if Check == passwordCorrect % First password check
             playPasswordCorrectAudio();
             correct = true;
@@ -178,17 +178,17 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
             Attempt2 = inputdlg('Enter Password (Try 2):'); % Second password input
             Check = str2double(Attempt2);
         end
-        if Check == passwordCorrect && correct ~= true % Second password check
+        if Check == passwordCorrect && correct == false % Second password check
             playPasswordCorrectAudio();
             correct = true;
-        else
+        elseif Check ~= passwordCorrect && correct == false
             playAttemptFailedAudio();
             Attempt3 = inputdlg('Enter Password (Try 3):'); % Third password input
             Check = str2double(Attempt3);
         end
-        if Check == passwordCorrect && correct ~= true % Third Password Check
+        if Check == passwordCorrect && correct == false % Third Password Check
             playPasswordCorrectAudio();
-        else
+        elseif Check ~= passwordCorrect && correct == false
             playNoMoreAttemptsAudio();
             playAlarmSiren();
             endAlarm();
@@ -197,30 +197,30 @@ function MASTER(rvr, trainedNetwork, myVideo1, vid)
 
     function endAlarm()
     % Purpose: Ends the alarm sound if the disable password is correctly entered
-    % Input: Value of panic function
+    % Input: NONE
     % Output: NONE
     % Usage: endAlarm()
         ADC = 123456;
-        correct = false;
         ADCattempt1 = inputdlg('Enter ADC (Try 1):'); % First password input
         Check = str2double(ADCattempt1);
+        disabled = false; 
         if Check == ADC % First password check
             playAlarmDisabledAudio();
-            correct = true;
+            disabled = true;
         else
             ADCattempt2 = inputdlg('Enter ADC (Try 2):'); % Second password input
             Check = str2double(ADCattempt2);
         end
-        if Check == ADC && correct ~= true % Second password check
+        if Check == ADC && disabled == false % Second password check
             playAlarmDisabledAudio();
-            correct = true;
-        else
+            disabled = true;
+        elseif Check~= ADC && disabled == false
             ADCattempt3 = inputdlg('Enter ADC (Try 3):'); % Second password input
             Check = str2double(ADCattempt3);
         end
-        if Check == ADC && correct ~= true % Third password check
+        if Check == ADC && correct == false % Third password check
             playAlarmDisabledAudio();
-        else
+        elseif Check ~= ADC && disabled == false
             playTooManyFailedAttemptsAudio();
         end
     end
